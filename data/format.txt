@@ -1,0 +1,17 @@
+(base) agilex@agilex:~/RoboticsDiffusionTransformer-main$ python /home/agilex/RoboticsDiffusionTransformer-main/data/look.py
+Dataset: action, shape: (300, 14), dtype: float32
+Dataset: instruction, shape: (), dtype: object
+Group: observations
+Group: observations/images
+Dataset: observations/images/cam_high, shape: (300, 480, 640, 3), dtype: uint8
+Dataset: observations/images/cam_left_wrist, shape: (300, 480, 640, 3), dtype: uint8
+Dataset: observations/images/cam_right_wrist, shape: (300, 480, 640, 3), dtype: uint8
+Dataset: observations/qpos, shape: (300, 14), dtype: float32
+Object: action
+Object: instruction
+Object: observations
+Object: observations/images
+Object: observations/images/cam_high
+Object: observations/images/cam_left_wrist
+Object: observations/images/cam_right_wrist
+Object: observations/qposh
