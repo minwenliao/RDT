@@ -101,7 +101,7 @@
     "putmajiangintobox": 50,
     "press_alcohol_sanitizing": 50,
     "place_phone": 50,
-    "plug_charger": 50,
+    "_plug_charger": 50,
     "pick_key_to_basket": 50,
     "coffee_cup_right_to_right": 50,
     "arrange_word_ABCD": 50,
@@ -372,5 +372,8 @@
     "pick_badminton": 50,
     "pick_apple_into_bag": 50,
     "pour_water_dark_2": 50,
-    "arrange_word_ALOHA": 50
+    "arrange_word_ALOHA": 50,
+    "push_button":20,
+    "pick_up_glass_rod3": 20,
+    "plug_charger": 20
 }

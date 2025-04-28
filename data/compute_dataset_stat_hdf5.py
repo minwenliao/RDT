@@ -4,6 +4,7 @@ in `pretrain_datasets.json` or `pretrain_datasets.json`.
 """
 
 import json
+import yaml
 import argparse
 import sys
 import os
@@ -81,9 +82,17 @@ if __name__ == "__main__":
                         help="JSON file path to save the dataset statistics.")
     parser.add_argument('--skip_exist', action='store_true', 
                         help="Whether to skip the existing dataset statistics.")
+    parser.add_argument('--dataset', 
+        type=str, 
+        required=True
+    )
     args = parser.parse_args()
+
+    with open("configs/base.yaml", "r") as fp:
+        config = yaml.safe_load(fp)
+    config["dataset"]["name"] = args.dataset
     
-    vla_dataset = HDF5VLADataset()
+    vla_dataset = HDF5VLADataset(config)
     dataset_name = vla_dataset.get_dataset_name()
     
     try:

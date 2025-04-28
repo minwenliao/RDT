@@ -2,7 +2,7 @@ common:
   # The number of historical images
   img_history_size: 2
   # The number of future actions to predict
-  action_chunk_size: 4
+  action_chunk_size: 64
   # The number of cameras to be used in the model
   num_cameras: 3
   # Dimension for state/action, we use the same space for both state and action
@@ -41,6 +41,8 @@ model:
   lang_adaptor: mlp2x_gelu
   img_adaptor: mlp2x_gelu
   state_adaptor: mlp3x_gelu
+  effort_dim: 14
+  effort_type: no # no, state, token, his_c, fut, his_c_fut
   lang_token_dim: 4096
   img_token_dim: 1152
   # Dim of action or proprioception vector

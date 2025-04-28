@@ -5,20 +5,24 @@ import yaml
 import sys
 import os
 
-sys.path.append('/baai-cwm-1/baai_cwm_ml/algorithm/ziaur.rehman/code/2_3/copy')
+sys.path.append('/baai-cwm-1/baai_cwm_ml/cwm/ziaur.rehman/lmw/code/code/RDT-effort')
 
 
 from models.multimodal_encoder.t5_encoder import T5Embedder
 
 
 GPU = 0
-MODEL_PATH ="google/t5-v1_1-xxl"
+MODEL_PATH ="/baai-cwm-1/baai_cwm_ml/cwm/ziaur.rehman/code/2_3/2/RoboticsDiffusionTransformer-main/google/t5-v1_1-xxl"
 CONFIG_PATH = "configs/base.yaml"
-SAVE_DIR = "/baai-cwm-1/baai_cwm_ml/algorithm/ziaur.rehman/code/2_3/copy/outs/321"
+SAVE_DIR = "output"
 
 # Modify this to your task name and instruction
-TASK_NAME = "blocks"
-INSTRUCTION = "Use the robotic arm to perform a precise and controlled motion, utilizing the gripper to gently push the blocks over. Ensure that all movements are smooth and stable, avoiding sudden acceleration or abrupt contact. The arm should approach the block slowly, aligning the gripper at a slight angle to the block’s surface. Then, apply a gradual horizontal force through the gripper to push the block until it tips over in a controlled manner. Throughout the operation, continuously monitor the arm's position, velocity, and applied force to maintain safety, stability, and consistency of the motion."
+# TASK_NAME = "push_button"
+# INSTRUCTION = "With the right arm of the robotic arm, gently and steadily grasp the glass rod by its midsection, ensuring a secure grip, and then lift it slowly to prevent any instability."
+# TASK_NAME = "pick_up_glass_rod3"
+# INSTRUCTION = "With the right arm of the robotic arm, gently and steadily grasp the glass rod by its midsection, ensuring a secure grip, and then lift it slowly to prevent any instability."
+TASK_NAME = "plug_charger"
+INSTRUCTION = "With the dual-prong charger held in the right robotic arm, carefully align it with the power strip on the table and plug it in securely.",
 
 
 # Note: if your GPU VRAM is less than 24GB, 
@@ -58,6 +62,7 @@ def main():
             "embeddings": pred
         }, save_path
     )
+    # torch.save(pred, save_path)
     
     print(f'\"{INSTRUCTION}\" from \"{TASK_NAME}\" is encoded by \"{MODEL_PATH}\" into shape {pred.shape} and saved to \"{save_path}\"')
 

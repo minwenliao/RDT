@@ -95,7 +95,8 @@ class VLAConsumerDataset(Dataset):
         cam_ext_mask_prob=-1.0,
         state_noise_snr=None,
         use_hdf5=False,
-        use_precomp_lang_embed=False
+        use_precomp_lang_embed=False,
+        all_config=None
     ):
         super(VLAConsumerDataset, self).__init__()
         
@@ -126,7 +127,7 @@ class VLAConsumerDataset(Dataset):
         self.use_hdf5 = use_hdf5
         self.hdf5_dataset = None
         if use_hdf5:
-            self.hdf5_dataset = HDF5VLADataset()
+            self.hdf5_dataset = HDF5VLADataset(all_config)
         self.use_precomp_lang_embed = use_precomp_lang_embed
         if use_precomp_lang_embed:
             self.empty_lang_embed = torch.load("data/empty_lang_embed.pt")

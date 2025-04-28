@@ -30,6 +30,11 @@ def log_sample_res(
         states = states[:, -1:, :]
         actions = batch["actions"].to(dtype=weight_dtype)
         state_elem_mask = batch["state_elem_mask"].to(dtype=weight_dtype)
+        efforts = batch["efforts"].to(dtype=weight_dtype) if "efforts" in batch else None
+        if rdt.effort_type in ("fut", "his_c_fut"):
+            states = torch.cat([states, torch.zeros((states.shape[0], 1, 14), dtype=states.dtype, device=states.device)], dim=-1)
+            state_norm = torch.cat([state_norm, torch.ones((state_norm.shape[0], 14), dtype=state_norm.dtype, device=state_norm.device)], dim=-1)
+            state_elem_mask = torch.cat([state_elem_mask, torch.zeros((state_elem_mask.shape[0], 14), dtype=state_elem_mask.dtype, device=state_elem_mask.device)], dim=-1)
             
         batch_size, _, C, H, W = images.shape
         image_embeds = vision_encoder(images.reshape(-1, C, H, W)).detach()
@@ -49,7 +54,8 @@ def log_sample_res(
             img_tokens=image_embeds,
             state_tokens=states,
             action_mask=state_elem_mask.unsqueeze(1),
-            ctrl_freqs=ctrl_freqs
+            ctrl_freqs=ctrl_freqs,
+            efforts=efforts,
         )
         
         num_steps = pred_actions.shape[1]

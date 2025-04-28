@@ -1,0 +1,9 @@
+conda activate /baai-cwm-1/baai_cwm_ml/algorithm/ziaur.rehman/rdt
+cd /baai-cwm-1/baai_cwm_ml/cwm/ziaur.rehman
+
+将effort放入state中时需要计算统计数据，似乎只被用于在训练时概率性用均值mask掉state
+注意包含和不包含effort的统计数据不通用
+python data/compute_dataset_stat_hdf5.py
+
+effort_type=token的含义和pi0中的llm相同，但activation是gelu而非pi0中用的swish（几乎没区别）
+effort token被拼接在image token后面

@@ -76,6 +76,8 @@ def train(args, logger):
     # Read the config
     with open(args.config_path, "r") as fp:
         config = yaml.safe_load(fp)
+    config["model"]["effort_type"] = args.effort_type
+    config["dataset"]["name"] = args.dataset
 
     logging_dir = Path(args.output_dir, args.logging_dir)
 
@@ -147,7 +149,7 @@ def train(args, logger):
         and not os.path.isfile(args.pretrained_model_name_or_path)
     ):
         logger.info("Constructing model from pretrained checkpoint.")
-        rdt = RDTRunner.from_pretrained(args.pretrained_model_name_or_path)
+        rdt = RDTRunner.from_pretrained(args.pretrained_model_name_or_path, config=config['model'])
     else:
         logger.info("Constructing model from provided config.")
         # Calculate the image condition length
@@ -250,6 +252,7 @@ def train(args, logger):
         state_noise_snr=args.state_noise_snr,
         use_hdf5=args.load_from_hdf5,
         use_precomp_lang_embed=args.precomp_lang_embed,
+        all_config=config
     )
     sample_dataset = VLAConsumerDataset(
         config=config["dataset"],
@@ -264,6 +267,7 @@ def train(args, logger):
         state_noise_snr=None,
         use_hdf5=args.load_from_hdf5,
         use_precomp_lang_embed=args.precomp_lang_embed,
+        all_config=config
     )                              
     
     data_collator = DataCollatorForVLAConsumerDataset(tokenizer)                                                        
@@ -409,6 +413,7 @@ def train(args, logger):
                 actions = batch["actions"].to(dtype=weight_dtype)
                 state_elem_mask = batch["state_elem_mask"].to(dtype=weight_dtype)
                 ctrl_freqs = batch["ctrl_freqs"]
+                efforts = batch["efforts"].to(dtype=weight_dtype) if "efforts" in batch else None
                     
                 with torch.no_grad():
                     batch_size, _, C, H, W = images.shape
@@ -431,7 +436,8 @@ def train(args, logger):
                     state_tokens=states,
                     action_gt=actions,
                     action_mask=state_elem_mask,
-                    ctrl_freqs=ctrl_freqs
+                    ctrl_freqs=ctrl_freqs,
+                    efforts=efforts,
                 )
 
                 accelerator.backward(loss)

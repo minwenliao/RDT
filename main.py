@@ -1,3 +1,4 @@
+# import debugpy;debugpy.connect(5679)
 import argparse
 import os
 from train.train import train
@@ -280,6 +281,14 @@ def parse_args(input_args=None):
         default="pretrain",
         required=False,
         help="Whether to load the pretrain dataset or finetune dataset."
+    )
+    parser.add_argument('--effort_type', 
+        type=str, 
+        default="no", # state, token, his_c, fut, his_c_fut
+    )
+    parser.add_argument('--dataset', 
+        type=str, 
+        default="push_button", # push_button, 
     )
 
     if input_args is not None:

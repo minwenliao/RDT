@@ -42,9 +42,8 @@ fi
 # accelerate launch main.py \
 #     --deepspeed="./configs/zero2.json" \
 #     ...
-
-deepspeed --hostfile=hostfile.txt main.py \
-    --deepspeed="./configs/zero1_4card.json" \
+accelerate launch main.py \
+    --deepspeed="./configs/zero2.json" \
     --pretrained_model_name_or_path="/baai-cwm-1/baai_cwm_ml/cwm/ziaur.rehman/lmw/code/code/rdt/rdt-1b" \
     --pretrained_text_encoder_name_or_path=$TEXT_ENCODER_NAME \
     --pretrained_vision_encoder_name_or_path=$VISION_ENCODER_NAME \

@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 # 打开 HDF5 文件
-file_path = "/baai-cwm-1/baai_cwm_ml/public_data/scenes/rdt/rdt-ft-data/new_final/episode_301.hdf5"  # 替换为你的文件路径
+file_path = "/baai-cwm-nas/public_data/scenes/ych_newpick/pick_up_glass_rod3/episode_396.hdf5"  # 替换为你的文件路径
 with h5py.File(file_path, 'r') as f:
     # 打印文件中的所有主键
     def print_attrs(name, obj):
