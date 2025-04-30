@@ -28,7 +28,7 @@ class RDTRunner(
         self.effort_type = config['effort_type']
         # When effort_type is 'fut' or 'his_c_fut', the action output will include effort prediction
         self.action_out_dim = action_dim
-        if self.effort_type == 'fut' or self.effort_type == 'his_c_fut':
+        if self.effort_type in ('fut', 'his_c_fut'):
             self.action_out_dim += 14  # Add effort dimension
         
         self.model = RDT(
@@ -42,6 +42,7 @@ class RDTRunner(
             lang_pos_embed_config=lang_pos_embed_config,
             img_pos_embed_config=img_pos_embed_config,
             dtype=dtype,
+            eff_tok_len=1 if self.effort_type in ("his_c", "his_c_fut") else 0
         )
 
         # Create adpators for various conditional inputs
@@ -141,14 +142,15 @@ class RDTRunner(
         adpated_lang = self.lang_adaptor(lang_tokens)
         adpated_img = self.img_adaptor(img_tokens)
         adpated_state = self.state_adaptor(state_tokens)
+        adpated_effort = None
         if efforts is not None:
             adpated_effort = self.effort_adaptor(efforts)
-            adpated_img = torch.cat([adpated_img, adpated_effort], dim=2)
+            # adpated_img = torch.cat([adpated_img, adpated_effort], dim=1)
 
-        return adpated_lang, adpated_img, adpated_state
+        return adpated_lang, adpated_img, adpated_state, adpated_effort
 
     def conditional_sample(self, lang_cond, lang_attn_mask, img_cond, 
-                           state_traj, action_mask, ctrl_freqs):
+                           state_traj, action_mask, ctrl_freqs, effort_token):
         '''
         lang_cond: language conditional data, (batch_size, lang_len, hidden_size).
         lang_attn_mask: (batch_size, lang_len), a mask for valid language tokens,
@@ -175,7 +177,10 @@ class RDTRunner(
             # Prepare state-action trajectory
             action_traj = torch.cat([noisy_action, action_mask], dim=2)
             action_traj = self.state_adaptor(action_traj)
-            state_action_traj = torch.cat([state_traj, action_traj], dim=1)
+            if effort_token is not None:
+                state_action_traj = torch.cat([state_traj, effort_token, action_traj], dim=1)
+            else:
+                state_action_traj = torch.cat([state_traj, action_traj], dim=1)
             
             # Predict the model output
             model_output = self.model(state_action_traj, ctrl_freqs,
@@ -243,8 +248,10 @@ class RDTRunner(
         action_mask = action_mask.expand(-1, state_action_traj.shape[1], -1)
         state_action_traj = torch.cat([state_action_traj, action_mask], dim=2)
         # Align the dimension with the hidden size
-        lang_cond, img_cond, state_action_traj = self.adapt_conditions(
+        lang_cond, img_cond, state_action_traj, effort_token = self.adapt_conditions(
             lang_tokens, img_tokens, state_action_traj, efforts)
+        if effort_token is not None:
+            state_action_traj = torch.cat([state_action_traj[:,:1], effort_token, state_action_traj[:,1:]], dim=1)
         # Predict the denoised result
         pred = self.model(state_action_traj, ctrl_freqs, 
                           timesteps, lang_cond, img_cond, 
@@ -282,13 +289,13 @@ class RDTRunner(
         #     action_mask = torch.cat([action_mask, torch.zeros((action_mask.shape[0], 1, 14), dtype=action_mask.dtype, device=action_mask.device)], dim=-1)
 
         state_tokens = torch.cat([state_tokens, action_mask], dim=2)
-        lang_cond, img_cond, state_traj = self.adapt_conditions(
+        lang_cond, img_cond, state_traj, effort_token = self.adapt_conditions(
             lang_tokens, img_tokens, state_tokens, efforts)
         
         # Run sampling
         action_pred = self.conditional_sample(
             lang_cond, lang_attn_mask, img_cond, 
-            state_traj, action_mask, ctrl_freqs,
+            state_traj, action_mask, ctrl_freqs, effort_token
         )
         
         # For fut mode, only return the action part, not the effort predictions
@@ -302,26 +309,26 @@ class RDTRunner(
 
     def load_state_dict(self, state_dict, strict=True):
         """load pretrain weights in different shape models. COMMENT THIS DURING INFERENCE"""
-        if self.effort_type != "fut" and self.effort_type != "his_c_fut":
+        if self.effort_type not in ("his_c", "fut", "his_c_fut"):
             # Normal loading for non-fut modes
             return super().load_state_dict(state_dict, strict)
             
         # For fut mode, we need special handling of the final layer and state adaptor
         new_state_dict = {}
         for key, value in state_dict.items():
-            if key == "model.final_layer.ffn_final.fc2.weight":
+            if key == "model.final_layer.ffn_final.fc2.weight" and "fut" in self.effort_type:
                 # Handle final layer weight
                 new_weight = torch.zeros(self.action_out_dim, value.size(1), dtype=value.dtype, device=value.device)
                 new_weight[:self.action_dim] = value
                 new_weight[self.action_dim:].normal_(mean=0.0, std=0.02)
                 new_state_dict[key] = new_weight
-            elif key == "model.final_layer.ffn_final.fc2.bias":
+            elif key == "model.final_layer.ffn_final.fc2.bias" and "fut" in self.effort_type:
                 # Handle final layer bias
                 new_bias = torch.zeros(self.action_out_dim, dtype=value.dtype, device=value.device)
                 new_bias[:self.action_dim] = value
                 new_bias[self.action_dim:].zero_()
                 new_state_dict[key] = new_bias
-            elif key == "state_adaptor.0.weight":
+            elif key == "state_adaptor.0.weight" and "fut" in self.effort_type:
                 # NOTE bug here
                 # Handle state adaptor input layer weight (works for both Linear and first layer of MLP)
                 new_weight = torch.zeros(value.size(0), self.state_adaptor_in_features, 
@@ -331,6 +338,17 @@ class RDTRunner(
                 new_weight[:, :self.action_dim] = value[:, :self.action_dim]
                 new_weight[:, self.action_dim + 14:self.action_dim + 14 + self.action_dim] = value[:, self.action_dim:]
                 new_state_dict[key] = new_weight
+            elif key == "model.x_pos_embed" and "his_c" in self.effort_type:
+                # Handle positional embedding when eff_tok_len changes from 0 to 1
+                # Original shape is [1, horizon+3, hidden_size], new shape should be [1, horizon+3+1, hidden_size]
+                old_size = value.size(1)
+                new_size = old_size + 1  # Adding 1 for eff_tok_len
+                new_embed = torch.zeros(1, new_size, value.size(2), dtype=value.dtype, device=value.device)
+                new_embed.normal_(mean=0.0, std=0.02)
+                # Copy the original embeddings
+                new_embed[:, :-self.pred_horizon-1] = value[:, :-self.pred_horizon]
+                new_embed[:, -self.pred_horizon:] = value[:, -self.pred_horizon:]
+                new_state_dict[key] = new_embed
             else:
                 new_state_dict[key] = value
         

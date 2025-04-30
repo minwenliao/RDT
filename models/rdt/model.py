@@ -34,7 +34,8 @@ class RDT(nn.Module):
         img_cond_len=4096,
         lang_pos_embed_config=None,
         img_pos_embed_config=None,
-        dtype=torch.bfloat16
+        dtype=torch.bfloat16,
+        eff_tok_len=0
     ):
         super().__init__()
         self.horizon = horizon
@@ -44,6 +45,7 @@ class RDT(nn.Module):
         self.dtype = dtype
         self.lang_pos_embed_config = lang_pos_embed_config
         self.img_pos_embed_config = img_pos_embed_config
+        self.eff_tok_len = eff_tok_len
 
         self.t_embedder = TimestepEmbedder(hidden_size, dtype=dtype)
         self.freq_embedder = TimestepEmbedder(hidden_size, dtype=dtype)
@@ -51,7 +53,7 @@ class RDT(nn.Module):
         # We will use trainable sin-cos embeddings
         # [timestep; state; action]
         self.x_pos_embed = nn.Parameter(
-            torch.zeros(1, horizon+3, hidden_size))
+            torch.zeros(1, horizon+3+eff_tok_len, hidden_size)) # t, freq, state, [effort], actions
         # Language conditions
         self.lang_cond_pos_embed = nn.Parameter(
             torch.zeros(1, max_lang_cond_len, hidden_size))
@@ -74,15 +76,18 @@ class RDT(nn.Module):
                     nn.init.constant_(module.bias, 0)
         self.apply(_basic_init)
 
+        mm_cond = [
+            ('timestep', 1),
+            ('ctrl_freq', 1),
+            ('state', 1),
+            ('action', self.horizon),
+        ]
+        if self.eff_tok_len != 0:
+            mm_cond.append(('effort', 1))
         # Initialize pos_embed by sin-cos embedding
         x_pos_embed = get_multimodal_cond_pos_embed(
             embed_dim=self.hidden_size,
-            mm_cond_lens=OrderedDict([
-                ('timestep', 1),
-                ('ctrl_freq', 1),
-                ('state', 1),
-                ('action', self.horizon),
-            ])
+            mm_cond_lens=OrderedDict(mm_cond)
         )
         self.x_pos_embed.data.copy_(torch.from_numpy(x_pos_embed).float().unsqueeze(0))
 

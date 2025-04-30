@@ -30,7 +30,7 @@ def log_sample_res(
         states = states[:, -1:, :]
         actions = batch["actions"].to(dtype=weight_dtype)
         state_elem_mask = batch["state_elem_mask"].to(dtype=weight_dtype)
-        efforts = batch["efforts"].to(dtype=weight_dtype) if "efforts" in batch else None
+        efforts = batch["efforts"].to(dtype=weight_dtype) if type(batch.get("efforts")) is torch.Tensor else None
         if rdt.effort_type in ("fut", "his_c_fut"):
             states = torch.cat([states, torch.zeros((states.shape[0], 1, 14), dtype=states.dtype, device=states.device)], dim=-1)
             state_norm = torch.cat([state_norm, torch.ones((state_norm.shape[0], 14), dtype=state_norm.dtype, device=state_norm.device)], dim=-1)

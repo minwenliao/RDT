@@ -338,8 +338,8 @@ class HDF5VLADataset:
                 "cam_right_wrist": cam_right_wrist,
                 "cam_right_wrist_mask": cam_right_wrist_mask
             }
-            if self.effort_type not in ["state", "no"]:
-                sample["effort"] = effort
+            if self.effort_type not in ["state", "no", "fut"]:
+                sample["efforts"] = effort
             return True, sample
 
     def get_effort_history(self, f, step_id):

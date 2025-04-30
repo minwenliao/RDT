@@ -248,6 +248,7 @@ class VLAConsumerDataset(Dataset):
                     res = self.hdf5_dataset.get_item()
                     content = res['meta']
                     states = res['state']
+                    efforts = res.get('efforts')
                     actions = res['actions']
                     state_elem_mask = res['state_indicator']
                     image_metas = [
@@ -278,6 +279,7 @@ class VLAConsumerDataset(Dataset):
                 # Randomly mask the states by the mean state
                 data_dict["states"] = states \
                     if random.random() > self.cond_mask_prob else ds_state_mean
+                data_dict["efforts"] = efforts
                 data_dict["actions"] = actions
                 data_dict["state_elem_mask"] = state_elem_mask \
                     if random.random() > self.cond_mask_prob else np.zeros_like(state_elem_mask)
@@ -404,7 +406,8 @@ class DataCollatorForVLAConsumerDataset(object):
             "state_norm": [],
             "images": [],
             "data_indices": [],
-            "ctrl_freqs": []
+            "ctrl_freqs": [],
+            "efforts": []
         }
         input_ids = []
         lang_embeds = []
@@ -416,6 +419,8 @@ class DataCollatorForVLAConsumerDataset(object):
                 'states', 'actions',
                 'state_elem_mask', 'state_norm',
             ]
+            if instance.get("efforts") is not None:
+                keys_to_check.append("efforts")
             for key in keys_to_check:
                 if isinstance(instance[key], torch.Tensor):
                     item = instance[key]
@@ -438,6 +443,8 @@ class DataCollatorForVLAConsumerDataset(object):
             'state_elem_mask', 'state_norm',
             "images"
         ]
+        if "efforts" in keys_to_check:
+            keys_to_stack.append("efforts")
         for key in keys_to_stack:
             batch[key] = torch.stack(batch[key], dim=0)
         

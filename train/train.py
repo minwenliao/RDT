@@ -413,7 +413,7 @@ def train(args, logger):
                 actions = batch["actions"].to(dtype=weight_dtype)
                 state_elem_mask = batch["state_elem_mask"].to(dtype=weight_dtype)
                 ctrl_freqs = batch["ctrl_freqs"]
-                efforts = batch["efforts"].to(dtype=weight_dtype) if "efforts" in batch else None
+                efforts = batch["efforts"].to(dtype=weight_dtype) if type(batch.get("efforts")) is torch.Tensor else None
                     
                 with torch.no_grad():
                     batch_size, _, C, H, W = images.shape
